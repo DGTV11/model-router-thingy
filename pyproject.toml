@@ -1,0 +1,25 @@
+[project]
+name = "model-router-thingy"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Daniel Wee", email = "danielweedk@gmail.com" }
+]
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi[standard]>=0.142.2",
+    "mypy>=2.4.0",
+    "openai>=3.24.0",
+    "pocketflow>=0.0.3",
+    "pydantic>=2.13.5",
+    "pyyaml>=6.0.3",
+    "types-pyyaml>=6.0.12.20260906",
+]
+
+[project.scripts]
+model-router-thingy = "model_router_thingy:main"
+
+[build-system]
+requires = ["uv_build>=0.12.14,<0.13.0"]
+build-backend = "uv_build"
