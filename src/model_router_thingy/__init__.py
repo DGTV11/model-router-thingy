@@ -60,33 +60,19 @@ class LLMBackendConfig(TypedDict):
     models: List[str]
 
 
-LLMBackendsConfig = RootModel[Dict[str, List[LLMBackendConfig]]]
+LLMBackendsConfigMulti = RootModel[Dict[str, List[LLMBackendConfig]]]
+LLMBackendsConfigSingle = RootModel[List[LLMBackendConfig]]
 
 
-# Load
-
-# llm_backends = [
-#     (
-#         backend["name"],
-#         OpenAI(base_url=backend["base_url"], api_key=backend["api_key"], max_retries=0),
-#         backend["models"],
-#     )
-#     for backend in LLM_CONFIG
-# ]
-# vlm_backends = [
-#     (
-#         backend["name"],
-#         OpenAI(base_url=backend["base_url"], api_key=backend["api_key"], max_retries=0),
-#         backend["models"],
-#     )
-#     for backend in VLM_CONFIG
-# ]
+# Config loader
 
 
-def load_backends_config(
-    backends_config: Dict[str, Any],
+def load_backends_config_multi(
+    backends_config_raw: Dict[str, List[Dict[str, Any]]],
 ) -> Dict[str, List[LLMBackend]]:
-    backends_config_validated = LLMBackendsConfig.model_validate(backends_config)
+    backends_config_validated = LLMBackendsConfigMulti.model_validate(
+        backends_config_raw
+    )
     return {
         backends_name: [
             LLMBackend(
@@ -105,6 +91,29 @@ def load_backends_config(
         ]
         for backends_name, backends in backends_config_validated.root.items()
     }
+
+
+def load_backends_config_single(
+    backend_config_raw: List[Dict[str, Any]],
+) -> List[LLMBackend]:
+    backends_config_validated = LLMBackendsConfigSingle.model_validate(
+        backends_config_raw
+    )
+    return [
+        LLMBackend(
+            name=backend["name"],
+            models=[
+                LLM(name=model, backend_name=backend["name"])
+                for model in backend["models"]
+            ],
+            client=OpenAI(
+                base_url=backend["base_url"],
+                api_key=backend["api_key"],
+                max_retries=0,
+            ),
+        )
+        for backend in backends_config_validated.root
+    ]
 
 
 # *Router
@@ -190,7 +199,7 @@ def main():
     config = input("YAML config path: ").strip()
 
     with open(config, "r") as f:
-        backends_config = load_backends_config(yaml.safe_load(f))
+        backends_config = load_backends_config_multi(yaml.safe_load(f))
     print(backends_config)
     assert "llm_backends" in backends_config  # and "vlm_backends" in backends_config
 
